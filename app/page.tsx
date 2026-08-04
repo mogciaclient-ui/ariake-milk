@@ -83,6 +83,15 @@ export default function Home() {
     const formData = new FormData(event.currentTarget);
     const password = String(formData.get("password") ?? "");
 
+    if (!auth) {
+      setMessage({
+        type: "error",
+        text: "現在ログイン機能を利用できません。管理者へお問い合わせください。",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       setMessage({ type: "success", text: "ログインしました。" });
@@ -95,6 +104,14 @@ export default function Home() {
 
   async function handlePasswordReset() {
     setMessage(null);
+
+    if (!auth) {
+      setMessage({
+        type: "error",
+        text: "現在ログイン機能を利用できません。管理者へお問い合わせください。",
+      });
+      return;
+    }
 
     if (!email.trim()) {
       setMessage({

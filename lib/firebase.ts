@@ -13,23 +13,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const missingValues = Object.entries(firebaseConfig)
+export const missingFirebaseValues = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
-if (missingValues.length > 0) {
-  throw new Error(
-    `Firebaseの環境変数が不足しています: ${missingValues.join(", ")}`
-  );
-}
+export const isFirebaseConfigured = missingFirebaseValues.length === 0;
 
 const app =
-  getApps().length === 0
-    ? initializeApp(firebaseConfig)
-    : getApps()[0];
+  !isFirebaseConfigured
+    ? null
+    : getApps().length === 0
+      ? initializeApp(firebaseConfig)
+      : getApps()[0];
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
+export const storage = app ? getStorage(app) : null;
 
 export default app;
