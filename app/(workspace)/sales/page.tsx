@@ -1,0 +1,18 @@
+"use client";
+
+import { useState } from "react";
+import { PageHeading, StatusBadge } from "@/components/page-heading";
+
+export default function SalesPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const activities = [
+    ["10:30", "訪問", "山田 花子", "定期契約のプラン変更相談", "完了"],
+    ["13:00", "電話", "渡辺 直子", "新商品キャンペーンのご案内", "予定"],
+    ["15:30", "商談", "株式会社 青海商事", "法人向け福利厚生プラン", "予定"],
+  ];
+  return <div className="mx-auto max-w-7xl"><PageHeading title="営業ダッシュボード" description="佐藤 美咲さんの活動状況" action={<button onClick={() => setModalOpen(true)} className="rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white">＋ 営業活動を登録</button>} />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["今月の訪問", "24件", "+4件"], ["新規契約", "8件", "目標まで2件"], ["商談成約率", "42%", "+6.2pt"], ["次回予定", "6件", "今週"]].map(([label, value, note]) => <div key={label} className="rounded-2xl border border-[#E5E7EB] bg-white p-5"><p className="text-sm font-semibold text-slate-500">{label}</p><p className="mt-3 text-3xl font-bold">{value}</p><p className="mt-2 text-xs font-bold text-[#2563EB]">{note}</p></div>)}</div>
+    <div className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_1fr]"><section className="rounded-2xl border border-[#E5E7EB] bg-white p-5"><div className="flex items-center justify-between"><h2 className="font-bold">今日の活動</h2><span className="text-xs text-slate-400">8月5日</span></div><div className="mt-4 divide-y divide-[#E5E7EB]">{activities.map(([time, type, customer, detail, status]) => <div key={`${time}${customer}`} className="flex gap-4 py-4"><p className="w-12 text-sm font-bold text-slate-400">{time}</p><div className="flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{customer}</p><StatusBadge tone={status === "完了" ? "green" : "blue"}>{type}</StatusBadge></div><p className="mt-1 text-sm text-slate-500">{detail}</p></div></div>)}</div></section><section className="rounded-2xl border border-[#E5E7EB] bg-white p-5"><h2 className="font-bold">営業支援AI</h2><p className="mt-2 text-sm leading-6 text-slate-500">商談分析とAIロープレは、クライアント確認後に本番APIへ接続できます。</p><div className="mt-5 space-y-3">{[["商談・テレアポ分析", "音声やテキストから改善点を確認"], ["AI営業ロープレ", "顧客役AIとの会話練習"], ["担当顧客の提案候補", "購入・解約予測からリスト化"]].map(([title, text]) => <button key={title} onClick={() => alert(`${title}は次フェーズのデモ候補です`)} className="w-full rounded-xl border border-[#E5E7EB] p-4 text-left hover:border-[#2563EB]/30"><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs text-slate-500">{text}</p></button>)}</div></section></div>
+    {modalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-5" onClick={() => setModalOpen(false)}><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}><div className="flex justify-between"><h2 className="text-xl font-bold">営業活動を登録</h2><button onClick={() => setModalOpen(false)}>✕</button></div><div className="mt-6 grid gap-4"><label className="text-sm font-bold">活動種別<select className="mt-2 h-11 w-full rounded-xl border border-[#E5E7EB] px-3 font-normal"><option>訪問</option><option>電話</option><option>商談</option></select></label><label className="text-sm font-bold">顧客<input className="mt-2 h-11 w-full rounded-xl border border-[#E5E7EB] px-3 font-normal" placeholder="顧客名を入力" /></label><label className="text-sm font-bold">活動内容<textarea className="mt-2 h-28 w-full rounded-xl border border-[#E5E7EB] p-3 font-normal" placeholder="実施内容や次回アクション" /></label></div><button onClick={() => { setModalOpen(false); alert("デモ登録しました（外部には保存されません）"); }} className="mt-5 w-full rounded-xl bg-[#2563EB] py-3 text-sm font-bold text-white">登録する</button></div></div>}
+  </div>;
+}
