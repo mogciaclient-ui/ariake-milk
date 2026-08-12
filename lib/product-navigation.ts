@@ -31,7 +31,6 @@ export const demoProducts: DemoProduct[] = [
         label: "契約・売上",
         items: [
           { slug: "contract-performance", label: "契約実績", description: "顧客ごとの契約内容と日別配送実績を確認・更新します。", kind: "list" },
-          { slug: "new-contract", label: "新規契約", description: "顧客情報、商品、配送曜日を入力して契約を登録します。", kind: "form" },
           { slug: "temporary-sales", label: "臨時売上", description: "通常契約外の商品販売や追加配送を登録します。", kind: "form" },
           { slug: "payments", label: "入金", description: "顧客の入金状況を検索し、入金処理を登録します。", kind: "list" },
           { slug: "route-staff", label: "順路・担当者変更", description: "配送順、配送担当者、集金担当者を一括変更します。", kind: "list" },
@@ -40,11 +39,7 @@ export const demoProducts: DemoProduct[] = [
       {
         label: "現場資料",
         items: [
-          { slug: "schedule-ledger", label: "予定台帳", description: "指定日の配送予定をコース・担当者別に確認します。", kind: "report" },
-          { slug: "picking", label: "ピッキング", description: "配送前の商品準備数を商品・コース別に集計します。", kind: "report" },
-          { slug: "delivery-list", label: "配送リスト", description: "住所、商品、配送メモを含む配送リストを作成します。", kind: "report" },
-          { slug: "route-table", label: "順路表", description: "担当コースの配送順と顧客情報を一覧表示します。", kind: "report" },
-          { slug: "quantity-summary", label: "本数集計", description: "指定日の商品本数を営業所・コース別に集計します。", kind: "analysis" },
+          { slug: "field-materials", label: "現場資料", description: "配送現場で使用する各種帳票をタブで切り替えて作成します。", kind: "report" },
         ],
       },
       {
@@ -62,7 +57,6 @@ export const demoProducts: DemoProduct[] = [
           { slug: "sales-details", label: "売上明細", description: "顧客・商品・期間を指定して売上明細を検索します。", kind: "list" },
           { slug: "product-summary", label: "商品集計", description: "商品分類・単価・取引先別の売上を集計します。", kind: "analysis" },
           { slug: "acquisition-cancellation", label: "新規・解約", description: "新規契約と解約の件数・理由・推移を確認します。", kind: "analysis" },
-          { slug: "sales-analysis", label: "営業分析", description: "担当者別の訪問、契約、継続実績を比較します。", kind: "analysis" },
           { slug: "customer-analysis", label: "顧客分析", description: "顧客構成、継続状況、購入傾向を確認します。", kind: "analysis" },
         ],
       },
@@ -88,6 +82,7 @@ export const demoProducts: DemoProduct[] = [
           { slug: "branch-status", label: "支店処理状況", description: "各営業所の締め処理・データ利用状況を確認します。", kind: "status" },
         ],
       },
+      ...legacyScreenGroups.filter((group) => group.label !== "現場資料（詳細）"),
     ],
   },
   {
@@ -99,16 +94,18 @@ export const demoProducts: DemoProduct[] = [
       {
         label: "商談・テレアポ分析",
         items: [
-          { slug: "dashboard", label: "営業AIダッシュボード", description: "商談品質、利用状況、改善傾向を確認します。", kind: "analysis" },
-          { slug: "meetings", label: "商談一覧", description: "登録された商談・テレアポと処理状況を確認します。", kind: "list" },
-          { slug: "meeting-upload", label: "商談を登録", description: "音声ファイルまたは文字起こしを登録します。", kind: "form" },
+          { slug: "dashboard", label: "ダッシュボード", description: "商談品質、利用状況、改善傾向を確認します。", kind: "analysis" },
+          { slug: "meetings", label: "営業一覧", description: "登録された営業活動・テレアポと処理状況を確認します。", kind: "list" },
+          { slug: "meeting-upload", label: "アップロード", description: "文字起こしと商談情報を入力して、AI分析へ登録します。", kind: "form" },
+          { slug: "speaker-separation", label: "話者分離", description: "商談ログの話者を確認・修正してAI分析を開始します。", kind: "form" },
           { slug: "meeting-analysis", label: "AI分析結果", description: "要約、顧客温度感、営業評価、改善点を確認します。", kind: "analysis" },
         ],
       },
       {
         label: "AIロープレ",
         items: [
-          { slug: "roleplay", label: "ロープレを開始", description: "シナリオを選び、AI顧客との練習を開始します。", kind: "form" },
+          { slug: "roleplay", label: "ロープレ", description: "シナリオを選び、AI顧客との練習を開始します。", kind: "form" },
+          { slug: "roleplay-session", label: "ロープレ中", description: "AI顧客と会話しながら苦手テーマを練習します。", kind: "form" },
           { slug: "scenarios", label: "シナリオ", description: "商談・テレアポの練習シナリオを管理します。", kind: "list" },
           { slug: "roleplay-results", label: "採点結果", description: "ロープレのスコア、強み、改善フレーズを確認します。", kind: "analysis" },
         ],
@@ -146,3 +143,4 @@ export function getDemoScreen(productId: string, slug: string) {
   const screen = product?.groups.flatMap((group) => group.items).find((item) => item.slug === slug);
   return product && screen ? { product, screen } : null;
 }
+import { legacyScreenGroups } from "@/lib/milmo-legacy-screens";

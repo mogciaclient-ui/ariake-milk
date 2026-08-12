@@ -7,7 +7,7 @@ import type { DemoProduct } from "@/lib/product-navigation";
 const logoPaths: Record<DemoProduct["id"], string> = {
   milmo: "/logos/milmo.png",
   selmo: "/logos/selmo.png",
-  commo: "/logos/commo.png",
+  commo: "/commo.logo.png",
 };
 
 export function ProductLogo({ product, size = 28 }: { product: DemoProduct; size?: number }) {

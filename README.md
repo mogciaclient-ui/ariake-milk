@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./public/milmo.logo.png" width="120">
+<img src="./public/milmo.png" width="120">
 
 # milmo.
 

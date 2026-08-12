@@ -27,3 +27,47 @@ button,
 input {
   font: inherit;
 }
+
+/* selmo. uses its logo yellow as the product accent. */
+.selmo-theme [class~="bg-[#2563EB]"] {
+  background-color: #facc15;
+  color: #422006;
+}
+
+.selmo-theme [class~="text-[#2563EB]"] {
+  color: #eab308;
+}
+
+.selmo-theme [class~="border-[#2563EB]"] {
+  border-color: #facc15;
+}
+
+.selmo-theme [class~="bg-blue-50"],
+.selmo-theme [class~="bg-blue-50/60"] {
+  background-color: #fefce8;
+}
+
+.selmo-theme [class~="border-blue-100"] {
+  border-color: #fef08a;
+}
+
+.selmo-theme [class~="text-blue-700"],
+.selmo-theme [class~="text-blue-800"] {
+  color: #854d0e;
+}
+
+.selmo-theme [class~="hover:bg-blue-700"]:hover {
+  background-color: #eab308;
+}
+
+.selmo-theme [class~="hover:bg-blue-50/40"]:hover {
+  background-color: rgb(254 252 232 / 0.75);
+}
+
+.selmo-theme [class~="focus:border-[#2563EB]"]:focus {
+  border-color: #facc15;
+}
+
+.selmo-theme [class~="focus:ring-blue-50"]:focus {
+  --tw-ring-color: #fef9c3;
+}
