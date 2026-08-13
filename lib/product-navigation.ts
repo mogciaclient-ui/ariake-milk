@@ -119,17 +119,44 @@ export const demoProducts: DemoProduct[] = [
     description: "公式LINE管理",
     groups: [
       {
-        label: "LINE管理",
+        label: "",
         items: [
-          { slug: "dashboard", label: "LINEダッシュボード", description: "友だち数、対応状況、LINE注文を確認します。", kind: "analysis" },
-          { slug: "users", label: "LINEユーザー", description: "LINEユーザーと顧客の紐付け状況を管理します。", kind: "list" },
-          { slug: "messages", label: "メッセージ", description: "受信・送信メッセージと対応状況を管理します。", kind: "list" },
-          { slug: "orders", label: "LINE注文", description: "LINEから受け付けた注文を確認・処理します。", kind: "list" },
-          { slug: "broadcasts", label: "一斉配信", description: "セグメントを選択してメッセージを配信します。", kind: "form" },
-          { slug: "segments", label: "セグメント", description: "契約・商品・地域などの配信対象条件を管理します。", kind: "list" },
-          { slug: "settings", label: "LINE設定", description: "通知テンプレートと連携状態を確認します。", kind: "status" },
+          { slug: "home", label: "ホーム", description: "LINE運用の状況と重要な指標を確認します。", kind: "analysis" },
         ],
       },
+      { label: "顧客", items: [
+        { slug: "customers", label: "顧客一覧", description: "LINE連携済みの顧客情報を一覧で確認します。", kind: "list" },
+        { slug: "customer-analysis", label: "顧客分析", description: "顧客構成や行動傾向を分析します。", kind: "analysis" },
+      ] },
+      { label: "アンケート", items: [
+        { slug: "survey-responses", label: "回答", description: "アンケートの回答内容を確認します。", kind: "list" },
+        { slug: "survey-analysis", label: "分析", description: "アンケート結果を集計・分析します。", kind: "analysis" },
+      ] },
+      { label: "セグメント", items: [
+        { slug: "segments", label: "セグメント一覧", description: "配信対象の顧客セグメントを管理します。", kind: "list" },
+        { slug: "segment-create", label: "新規作成", description: "条件を指定して新しいセグメントを作成します。", kind: "form" },
+      ] },
+      { label: "配信", items: [
+        { slug: "broadcast-create", label: "新規配信", description: "対象と内容を指定してLINE配信を作成します。", kind: "form" },
+        { slug: "broadcast-scheduled", label: "配信予定", description: "予約中のLINE配信を確認・編集します。", kind: "list" },
+        { slug: "broadcast-history", label: "配信履歴", description: "過去の配信内容と結果を確認します。", kind: "list" },
+      ] },
+      { label: "分析", items: [
+        { slug: "analysis-line", label: "LINE", description: "友だち数やメッセージ反応を分析します。", kind: "analysis" },
+        { slug: "analysis-customers", label: "顧客", description: "顧客属性と行動傾向を分析します。", kind: "analysis" },
+        { slug: "analysis-broadcasts", label: "配信", description: "配信ごとの開封・反応状況を分析します。", kind: "analysis" },
+        { slug: "analysis-conversions", label: "コンバージョン", description: "配信から注文・契約への成果を分析します。", kind: "analysis" },
+      ] },
+      { label: "AI", items: [
+        { slug: "ai-recommendations", label: "おすすめ施策", description: "顧客データから次に実施する施策を提案します。", kind: "analysis" },
+        { slug: "ai-message-create", label: "配信文章作成", description: "目的に合わせてLINE配信文をAIで作成します。", kind: "form" },
+      ] },
+      { label: "設定", items: [
+        { slug: "settings-line", label: "LINE連携", description: "LINE公式アカウントとの連携状態を管理します。", kind: "status" },
+        { slug: "settings-tags", label: "タグ", description: "顧客・配信に使用するタグを管理します。", kind: "list" },
+        { slug: "settings-auto-classification", label: "自動分類", description: "顧客を自動分類する条件を設定します。", kind: "form" },
+        { slug: "settings-account", label: "アカウント", description: "commo.のアカウント情報を確認・設定します。", kind: "form" },
+      ] },
     ],
   },
 ];
