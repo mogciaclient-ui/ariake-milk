@@ -26,6 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const office =
     demoOffices.find((item) => item.id === officeId) ?? demoOffices[0];
   const isSelmo = pathname.startsWith("/selmo/");
+  const isCommo = pathname.startsWith("/commo/");
 
   useEffect(() => {
     const session = getDemoSession();
@@ -95,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-[#E5E7EB] bg-white/95 px-5 backdrop-blur sm:px-8">
           <button aria-label="メニューを開く" onClick={() => setMenuOpen(true)} className="rounded-lg border border-[#E5E7EB] p-2 text-slate-600 lg:hidden"><svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
-          <div className="hidden sm:block"><p className="text-xs font-semibold text-slate-400">{office.name}</p><p className="mt-1 text-sm font-bold">配送・営業・顧客管理システム</p></div>
+          <div className="hidden sm:block"><p className="text-xs font-semibold text-slate-400">{office.name}</p><p className="mt-1 text-sm font-bold">{isCommo ? "LINE顧客マーケティング" : isSelmo ? "AI営業支援" : "配送・営業・顧客管理システム"}</p></div>
           <div className="flex items-center gap-2 sm:gap-3">{isSelmo && <div className="hidden w-40 rounded-xl border border-yellow-200 bg-yellow-50/70 px-3 py-2 md:block"><div className="flex items-center justify-between text-[10px] font-bold"><span className="text-yellow-800">AI利用回数</span><span className="text-slate-700">20 / 100回</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-yellow-400" style={{ width: "20%" }} /></div></div>}<label className="hidden items-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2 sm:flex"><span className="text-xs font-bold text-slate-400">表示</span><select aria-label="表示する営業所" value={officeId} onChange={(event) => setOfficeId(event.target.value as DemoOfficeId)} className="bg-transparent text-sm font-bold outline-none">{demoOffices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">デモ</span><button aria-label="通知" className="relative rounded-full border border-[#E5E7EB] p-2.5 text-slate-500"><span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#EF4444]" /><svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" /></svg></button></div>
         </header>
         <main className="p-5 sm:p-8">{children}</main>
