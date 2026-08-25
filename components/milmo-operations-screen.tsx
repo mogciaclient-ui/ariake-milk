@@ -6,6 +6,7 @@ import { useDemoOffice } from "@/lib/demo-office";
 import type { DemoScreen } from "@/lib/product-navigation";
 import { getLegacyScreenConfig } from "@/lib/milmo-legacy-screens";
 import { MilmoLegacySuiteScreen } from "@/components/milmo-legacy-suite-screen";
+import { MilmoOriginalPanel, originalScreenSpecs } from "@/components/milmo-original-panel";
 
 type Row = { id: string; primary: string; secondary: string; meta: string; amount: number; status: string };
 
@@ -62,6 +63,9 @@ const analysisCopy: Record<string, { metrics: Array<[string, string, string]>; t
 export function MilmoOperationsScreen({ screen }: { screen: DemoScreen }) {
   const legacyConfig = getLegacyScreenConfig(screen.slug);
   if (screen.slug === "field-materials") return <FieldMaterialsScreen screen={screen} />;
+  if (screen.slug === "data-maintenance") return <DataMaintenanceScreen screen={screen} />;
+  if (consolidatedFunctions[screen.slug]) return <ConsolidatedFunctionScreen screen={screen} />;
+  if (originalScreenSpecs[screen.label]) return <OriginalStandaloneScreen screen={screen} />;
   if (legacyConfig) return <MilmoLegacySuiteScreen screen={screen} config={legacyConfig} />;
   if (reportCopy[screen.slug]) return <ReportScreen screen={screen} />;
   if (analysisCopy[screen.slug]) return <AnalysisScreen screen={screen} />;
@@ -73,17 +77,93 @@ export function MilmoOperationsScreen({ screen }: { screen: DemoScreen }) {
   return <SettingsScreen screen={screen} />;
 }
 
+function OriginalStandaloneScreen({ screen }: { screen: DemoScreen }) {
+  return <ScreenFrame screen={screen}><MilmoOriginalPanel name={screen.label} /></ScreenFrame>;
+}
+
+const consolidatedFunctions: Record<string, Array<{ label: string; description: string }>> = {
+  "temporary-sales-management": [
+    { label: "臨時売上", description: "得意先を指定して臨時売上を1件ずつ登録します。" },
+    { label: "臨時売上連続", description: "複数の得意先・商品を表形式で連続登録します。" },
+  ],
+  "invoice-management": [
+    { label: "請求一覧表", description: "締日ごとの請求額と発行状態を確認します。" },
+    { label: "請求書", description: "対象締日の得意先別請求書を作成します。" },
+    { label: "キャンペーン請求書", description: "キャンペーン対象分の請求書を作成します。" },
+  ],
+  "product-management-reports": [
+    { label: "商品単価別集計表", description: "販売単価帯別の得意先数・本数・売上を集計します。" },
+    { label: "商品日報・月報", description: "商品実績を日別・月別に集計します。" },
+    { label: "商品取引先リスト", description: "メーカー・仕入先別の商品情報を出力します。" },
+  ],
+  "bulk-operations": [
+    { label: "臨時休業", description: "休業日と配送振替を一括設定します。" },
+    { label: "商品単価変更", description: "商品単価を指定日から一括変更します。" },
+  ],
+  "audit-history": [
+    { label: "履歴参照", description: "得意先・契約・売上・入金の履歴を検索します。" },
+    { label: "データ変更ログ参照", description: "操作者・日時・画面から変更内容を検索します。" },
+  ],
+  "course-master": [
+    { label: "配達コース", description: "配達担当者・曜日・訪問順を管理します。" },
+    { label: "集金コース", description: "集金担当者・訪問日・訪問順を管理します。" },
+  ],
+  "customer-master": [
+    { label: "得意先", description: "名称・住所・連絡先などの基本情報を管理します。" },
+    { label: "得意先情報", description: "契約・配送・請求情報をまとめて参照します。" },
+  ],
+  "system-settings": [
+    { label: "自社名設定", description: "帳票へ印字する会社情報を設定します。" },
+    { label: "伝票設定", description: "納品書・伝票の項目とレイアウトを設定します。" },
+    { label: "請求書設定", description: "請求書の文言とレイアウトを設定します。" },
+    { label: "印刷設定", description: "プリンター・用紙・余白を設定します。" },
+    { label: "ビュー再作成", description: "参照用データを再構築します。" },
+  ],
+};
+
+function FunctionSwitcher({ items, activeIndex, onChange, label }: { items: ReadonlyArray<{ label: string; description?: string }>; activeIndex: number; onChange: (index: number) => void; label: string }) {
+  return <div className="mb-6 border-b border-[#DCE3ED]">
+    <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {items.map((item, index) => { const active = activeIndex === index; return <button key={item.label} type="button" role="tab" aria-selected={active} onClick={() => onChange(index)} className={`relative shrink-0 rounded-t-xl px-5 py-3.5 text-sm font-bold transition ${active ? "bg-white text-[#2563EB]" : "text-slate-500 hover:bg-white/70 hover:text-slate-900"}`}>{item.label}{active && <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-[3px] rounded-t-full bg-[#2563EB]" />}</button>; })}
+    </div>
+  </div>;
+}
+
+function ConsolidatedFunctionScreen({ screen }: { screen: DemoScreen }) {
+  const functions = consolidatedFunctions[screen.slug];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = functions[activeIndex];
+
+  return <ScreenFrame screen={screen} hideHeading>
+    <FunctionSwitcher items={functions} activeIndex={activeIndex} onChange={setActiveIndex} label={screen.label} />
+    <MilmoOriginalPanel name={active.label} />
+  </ScreenFrame>;
+}
+
+const maintenanceTasks = [
+  { id: "backup", label: "データ保存", description: "現在の営業所データを保存し、復元ポイントを作成します。", action: "データを保存", tone: "blue" },
+  { id: "restore", label: "データ復元", description: "保存済みの復元ポイントから営業所データを戻します。", action: "データを復元", tone: "amber" },
+  { id: "closing", label: "締日更新", description: "締日ごとの請求を確定し、残高を翌月へ繰り越します。", action: "締日を更新", tone: "violet" },
+  { id: "monthly", label: "月次更新", description: "請求・売上・配送実績の処理対象月を更新します。", action: "月次を更新", tone: "emerald" },
+] as const;
+
+function DataMaintenanceScreen({ screen }: { screen: DemoScreen }) {
+  const [activeId, setActiveId] = useState<(typeof maintenanceTasks)[number]["id"]>("backup");
+  const active = maintenanceTasks.find((task) => task.id === activeId) ?? maintenanceTasks[0];
+
+  return <ScreenFrame screen={screen} hideHeading>
+    <FunctionSwitcher items={maintenanceTasks} activeIndex={maintenanceTasks.findIndex((task) => task.id === activeId)} onChange={(index) => setActiveId(maintenanceTasks[index].id)} label={screen.label} />
+    <div className="mt-5"><MilmoOriginalPanel name={active.label} /></div>
+  </ScreenFrame>;
+}
+
 const fieldMaterialTabs = [
-  ["予定台帳", "配送予定をコース順にまとめ、現場確認用の台帳を作成します。"],
-  ["ピッキングリスト", "配送前の商品準備数を商品・コース別に集計します。"],
-  ["クレートピッキング", "クレート単位の商品準備数を出力します。"],
-  ["配送リスト", "住所、商品、配送メモを含む配送リストを作成します。"],
-  ["クレート配送", "配送コースごとのクレート積載内容を出力します。"],
-  ["変更リスト", "契約・商品・配送曜日の変更内容を出力します。"],
-  ["順路表", "担当コースの配送順と顧客情報を一覧表示します。"],
-  ["本数集計表", "指定日の商品本数を営業所・コース別に集計します。"],
-  ["配達納品書", "配送先ごとの商品・数量・金額を納品書形式で出力します。"],
-  ["休配リスト", "休配期間中の顧客と振替状況を出力します。"],
+  ["順路表", "担当コースの配送順と顧客情報を一覧表示します。", 6],
+  ["本数集計表", "指定日の商品本数を営業所・コース別に集計します。", 7],
+  ["変更リスト", "契約・商品・配送曜日の変更内容を出力します。", 5],
+  ["ピッキングリスト", "配送前の商品準備数を商品・コース別に集計します。", 1],
+  ["配達納品書", "配送先ごとの商品・数量・金額を納品書形式で出力します。", 8],
+  ["配送リスト", "住所、商品、配送メモを含む配送リストを作成します。", 3],
 ] as const;
 
 function FieldMaterialsScreen({ screen }: { screen: DemoScreen }) {
@@ -106,15 +186,10 @@ function FieldMaterialsScreen({ screen }: { screen: DemoScreen }) {
     { columns: ["伝票番号", "お届け先", "商品", "数量", "単価", "金額"], rows: [["D-0812-01", "山田 花子", "有明牛乳 900ml", "2", "¥280", "¥560"], ["D-0812-02", "鈴木 一郎", "のむヨーグルト", "4", "¥160", "¥640"], ["D-0812-03", "伊藤 健二", "宅配専用コーヒー", "2", "¥190", "¥380"]], summary: "納品額合計 ¥1,580" },
     { columns: ["顧客", "コース", "休配期間", "対象商品", "振替", "状態"], rows: [["高橋 悦子", "豊洲", "8/12〜8/19", "全商品", "8/20", "受付済"], ["佐々木 正人", "有明 A", "8/12のみ", "有明牛乳", "なし", "確認済"], ["木村 洋子", "有明 B", "8/15〜8/18", "全商品", "8/19", "受付済"]], summary: "休配 3件" },
   ];
-  const previewData = previews[activeIndex];
+  const previewData = previews[active[2]];
 
-  return <ScreenFrame screen={screen} action={<button onClick={() => window.print()} className="rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white">印刷・PDF</button>}>
-    <div className="mb-6 overflow-x-auto border-b border-[#DCE3ED]">
-      <div role="tablist" aria-label="現場資料" className="flex min-w-max gap-7 px-1">
-        {fieldMaterialTabs.map(([label], index) => <button key={label} type="button" role="tab" aria-selected={activeIndex === index} onClick={() => { setActiveIndex(index); setPreview(true); }} className={`relative whitespace-nowrap pb-4 text-sm font-bold transition ${activeIndex === index ? "text-[#2563EB]" : "text-slate-500 hover:text-slate-900"}`}>{label}{activeIndex === index && <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-t-full bg-[#2563EB]" />}</button>)}
-      </div>
-    </div>
-    <div className="mb-5"><h2 className="text-xl font-bold">{active[0]}</h2><p className="mt-1 text-sm text-slate-500">{active[1]}</p></div>
+  return <ScreenFrame screen={screen} hideHeading>
+    <FunctionSwitcher items={fieldMaterialTabs.map(([label, description]) => ({ label, description }))} activeIndex={activeIndex} onChange={(index) => { setActiveIndex(index); setPreview(true); }} label="現場資料" />
     <section className="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm">
       <div className="border-b border-[#E5E7EB] px-5 py-4"><h3 className="font-bold">帳票の抽出条件</h3><p className="mt-1 text-xs text-slate-500">表示する日付・営業所・コースを変更できます。</p></div>
       <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4"><Field label="対象日" value={targetDate} type="date" onChange={setTargetDate} /><SelectField label="営業所" options={["全営業所", "本社営業所", "吉野ヶ里営業所"]} value={office} onChange={setOffice} /><SelectField label="コース" options={["すべてのコース", "有明 Aコース", "有明 Bコース", "豊洲コース"]} value={course} onChange={setCourse} /><SelectField label="出力順" options={["配送順", "顧客番号順", "商品順"]} value={sortOrder} onChange={setSortOrder} /></div>
@@ -124,9 +199,9 @@ function FieldMaterialsScreen({ screen }: { screen: DemoScreen }) {
   </ScreenFrame>;
 }
 
-function ScreenFrame({ screen, children, action }: { screen: DemoScreen; children: React.ReactNode; action?: React.ReactNode }) {
+function ScreenFrame({ screen, children, action, hideHeading = false }: { screen: DemoScreen; children: React.ReactNode; action?: React.ReactNode; hideHeading?: boolean }) {
   const { office } = useDemoOffice();
-  return <div className="mx-auto max-w-7xl"><div className="mb-3 text-xs font-bold text-slate-400">milmo. / {screen.label}</div><PageHeading title={screen.label} description={`${office.name}・${screen.description}`} action={action} />{children}</div>;
+  return <div className="mx-auto max-w-7xl">{!hideHeading && <><div className="mb-3 text-xs font-bold text-slate-400">milmo. / {screen.label}</div><PageHeading title={screen.label} description={`${office.name}・${screen.description}`} action={action} /></>}{children}</div>;
 }
 
 function FinanceScreen({ screen }: { screen: DemoScreen }) {

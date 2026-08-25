@@ -71,7 +71,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <svg className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition ${expanded ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
                 {expanded && <div className="px-2 pb-3 pt-2">
-                  {product.id === "milmo" && <div className="mb-3 space-y-0.5">{[["/dashboard", "ダッシュボード"], ["/customers", "顧客管理"], ["/orders", "注文管理"], ["/deliveries", "配送管理"]].map(([href, label]) => <Link key={href} href={href} onClick={() => setMenuOpen(false)} className={`block rounded-lg px-3 py-2 text-xs font-semibold transition ${pathname === href ? "bg-[#2563EB] text-white" : "text-slate-600 hover:bg-slate-100 hover:text-[#0F172A]"}`}>{label}</Link>)}</div>}
                   {product.groups.map((group, groupIndex) => <div key={`${group.label}-${groupIndex}`} className={["", "AIロープレ", "商談・テレアポ分析"].includes(group.label) ? "mt-0" : "mt-3 first:mt-1"}>{group.label && !["AIロープレ", "商談・テレアポ分析"].includes(group.label) && <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{group.label}</p>}<div className="space-y-0.5">{group.items.filter((item) => !["speaker-separation", "meeting-analysis", "roleplay-session", "scenarios", "roleplay-results"].includes(item.slug)).map((item) => {
                     const href = `/${product.id}/${item.slug}`;
                     const active = pathname === href;
