@@ -27,6 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     demoOffices.find((item) => item.id === officeId) ?? demoOffices[0];
   const isSelmo = pathname.startsWith("/selmo/");
   const isCommo = pathname.startsWith("/commo/");
+  const isDemo2 = pathname.startsWith("/demo2");
 
   useEffect(() => {
     const session = getDemoSession();
@@ -67,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               return <div key={product.id} className="overflow-hidden">
                 <button onClick={() => setOpenProduct(expanded ? "" : product.id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${activeProduct ? product.id === "selmo" ? "bg-yellow-50" : product.id === "commo" ? "bg-violet-50" : "bg-blue-50" : "hover:bg-slate-100"}`}>
                   {product.id === "selmo" ? <Image src="/selmo-logo.png" alt="selmo. ロゴ" width={24} height={24} className="h-6 w-6 shrink-0 object-contain" /> : product.id === "commo" ? <Image src="/commo.logo.png" alt="commo. ロゴ" width={24} height={24} className="h-6 w-6 shrink-0 object-contain" /> : <ProductLogo product={product} size={24} />}
-                  <span className="whitespace-nowrap font-logo text-xs font-normal text-[#0F172A]">{product.name}<span className={product.dotColor}>.</span>{product.id !== "milmo" && `-${product.description}`}</span>
+                  <span className="min-w-0 whitespace-nowrap font-logo text-xs font-normal text-[#0F172A]">{product.name}<span className={product.dotColor}>.</span>{product.id === "milmo" ? <span className="ml-1 font-sans text-[9px] font-bold text-slate-400">既存改善版</span> : `-${product.description}`}</span>
                   <svg className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition ${expanded ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
                 {expanded && <div className="px-2 pb-3 pt-2">
@@ -79,6 +80,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>}
               </div>;
             })}
+            <Link href="/demo2" onClick={() => setMenuOpen(false)} className={`group mt-3 block rounded-xl border p-3 transition ${isDemo2 ? "border-emerald-300 bg-emerald-50" : "border-emerald-100 bg-emerald-50/50 hover:border-emerald-300 hover:bg-emerald-50"}`}>
+              <div className="flex items-center gap-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white">2</span>
+                <div className="min-w-0"><p className="font-logo text-xs text-slate-900">milmo<span className="text-emerald-600">.</span> 新設計版</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-700">シンプル業務フロー</p></div>
+                <span className="ml-auto text-emerald-600 transition group-hover:translate-x-0.5">→</span>
+              </div>
+            </Link>
           </nav>
         </div>
         <div className="shrink-0 border-t border-[#E5E7EB] p-3">

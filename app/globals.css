@@ -34,6 +34,82 @@ input {
   font: inherit;
 }
 
+.field {
+  margin-top: 0.5rem;
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #dfe5dc;
+  background: white;
+  padding-inline: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #17362d;
+  outline: none;
+}
+
+.field:focus {
+  border-color: #78a66f;
+  box-shadow: 0 0 0 3px rgb(120 166 111 / 0.12);
+}
+
+/* demo2: white workspace with milmo red/coral accents. */
+.demo2-theme {
+  background: #f7f7f8;
+  color: #1f2937;
+}
+
+.demo2-theme [class~="bg-[#17362d]"] {
+  background-color: #9f2f2a;
+}
+
+.demo2-theme [class~="text-[#17362d]"] {
+  color: #2b2020;
+}
+
+.demo2-theme [class~="border-[#dfe5dc]"] {
+  border-color: #e5e7eb;
+}
+
+.demo2-theme [class~="bg-[#f5f7f3]"],
+.demo2-theme [class~="bg-[#f7f9f6]"],
+.demo2-theme [class~="bg-[#f8faf7]"],
+.demo2-theme [class~="bg-[#eef1ec]"] {
+  background-color: #f7f7f8;
+}
+
+.demo2-theme [class~="bg-[#e9f5db]"],
+.demo2-theme [class~="bg-[#dff2c9]"],
+.demo2-theme [class~="bg-[#eef6e8]"] {
+  background-color: #fee9e6;
+}
+
+.demo2-theme [class~="bg-[#78a66f]"] {
+  background-color: #dc6257;
+}
+
+.demo2-theme [class~="text-[#3f6b50]"],
+.demo2-theme [class~="text-[#38613f]"],
+.demo2-theme [class~="text-[#55915b]"],
+.demo2-theme [class~="text-[#78a66f]"],
+.demo2-theme [class~="text-[#254b3f]"] {
+  color: #b83e36;
+}
+
+.demo2-theme [class~="border-[#78a66f]"],
+.demo2-theme [class~="border-[#9ab89f]"] {
+  border-color: #e4837a;
+}
+
+.demo2-theme [class~="text-[#a9dc78]"] {
+  color: #ff9b8f;
+}
+
+.demo2-theme .field:focus {
+  border-color: #dc6257;
+  box-shadow: 0 0 0 3px rgb(220 98 87 / 0.12);
+}
+
 /* selmo. uses its logo yellow as the product accent. */
 .selmo-theme [class~="bg-[#2563EB]"] {
   background-color: #facc15;

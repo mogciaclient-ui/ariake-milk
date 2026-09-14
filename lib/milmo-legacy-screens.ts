@@ -13,7 +13,7 @@ const make = (category: string, mode: LegacyMode, entries: Array<[string, string
 
 export const legacyScreenGroups = [
   { label: "契約・売上（詳細）", items: make("契約・売上", "batch", [
-    ["barcode-payment", "バーコード入金", "バーコードを読み取り、顧客の入金を連続登録します。"],
+    ["barcode-payment", "入金登録", "月別の入金表から対象顧客をチェックし、入金日時を記録します。"],
     ["payment-inquiry", "入金明細問い合わせ", "顧客・期間・入金方法から入金明細を検索します。"],
     ["payment-summary", "入金集計表", "期間・担当者・入金区分別に入金を集計します。"],
     ["daily-reports", "各種日報", "売上・入金・契約変更の日報を作成します。"],

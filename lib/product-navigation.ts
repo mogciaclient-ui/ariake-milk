@@ -31,8 +31,9 @@ export const demoProducts: DemoProduct[] = [
         label: "契約・売上",
         items: [
           { slug: "contract-performance", label: "契約実績", description: "顧客ごとの契約内容と日別配送実績を確認・更新します。", kind: "list" },
+          { slug: "customers", label: "顧客管理", description: "顧客登録、契約、誕生日、メモ、フォロー状況を一か所で管理します。", kind: "list" },
           { slug: "temporary-sales-management", label: "臨時売上", description: "臨時売上の個別登録と連続登録をまとめて行います。", kind: "form" },
-          { slug: "barcode-payment", label: "バーコード入金", description: "バーコードを読み取り、顧客の入金を連続登録します。", kind: "form" },
+          { slug: "barcode-payment", label: "入金登録", description: "月別の入金表から対象顧客をチェックし、入金日時を記録します。", kind: "form" },
           { slug: "route-staff", label: "順路・担当者変更", description: "配送順と配送・集金担当者をまとめて変更します。", kind: "list" },
           { slug: "daily-reports", label: "各種日報", description: "売上・入金・契約変更の日報を作成します。", kind: "report" },
         ],
@@ -57,7 +58,6 @@ export const demoProducts: DemoProduct[] = [
           { slug: "acquisition-cancellation", label: "新規・解約管理", description: "新規契約と解約の件数・理由・推移を確認します。", kind: "analysis" },
           { slug: "product-management-reports", label: "商品管理資料", description: "商品単価別集計、日報・月報、取引先リストをまとめて作成します。", kind: "report" },
           { slug: "sales-details", label: "売上明細検索", description: "顧客・商品・期間を指定して売上明細を検索します。", kind: "list" },
-          { slug: "sticky-note-check", label: "付箋チェックリスト", description: "重要メモ・付箋のある顧客を一覧出力します。", kind: "report" },
         ],
       },
       {
@@ -75,20 +75,12 @@ export const demoProducts: DemoProduct[] = [
       },
       { label: "マスタ保守", items: [
         { slug: "course-master", label: "コース", description: "配達コースと集金コースをまとめて管理します。", kind: "list" },
-        { slug: "customer-master", label: "得意先", description: "得意先の基本情報と契約・配送・請求情報を管理します。", kind: "list" },
         { slug: "master-closing-date", label: "締日", description: "請求締日と支払条件を管理します。", kind: "list" },
-        { slug: "master-products", label: "商品参照", description: "商品、単価、分類、取引先を参照します。", kind: "list" },
+        { slug: "master-products", label: "商品管理", description: "商品、税込・税抜価格、税区分、分類、仕入先を管理します。", kind: "list" },
         { slug: "master-contracted-bank", label: "委託銀行", description: "口座振替の委託銀行情報を管理します。", kind: "list" },
       ] },
       { label: "設定", items: [
-        { slug: "system-settings", label: "各種設定", description: "自社名、伝票、請求書、印刷、ビュー再作成をまとめて設定します。", kind: "form" },
-      ] },
-      { label: "保存・更新", items: [
-        { slug: "data-maintenance", label: "保存・更新", description: "データの保存・復元と、締日・月次の更新処理をまとめて実行します。", kind: "status" },
-      ] },
-      { label: "オプション", items: [
-        { slug: "birthday-management", label: "誕生日管理", description: "誕生日顧客の対応状況とプレゼントを管理します。", kind: "form" },
-        { slug: "navigation-coordinate", label: "ナビ", description: "配送・集金先のナビ用座標と転送データを管理します。", kind: "form" },
+        { slug: "document-settings", label: "帳票・権限設定", description: "請求書の印字名と過去データの編集権限を管理します。", kind: "form" },
       ] },
     ],
   },
