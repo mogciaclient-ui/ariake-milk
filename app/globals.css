@@ -110,6 +110,12 @@ input {
   box-shadow: 0 0 0 3px rgb(220 98 87 / 0.12);
 }
 
+.demo2-theme .demo2-contract [class~="bg-[#2563EB]"] { background-color: #9f2f2a; }
+.demo2-theme .demo2-contract [class~="text-[#2563EB]"] { color: #b83e36; }
+.demo2-theme .demo2-contract [class~="border-[#2563EB]"] { border-color: #dc6257; }
+.demo2-theme .demo2-contract [class~="bg-blue-50"] { background-color: #fee9e6; }
+.demo2-theme .demo2-contract [class~="text-blue-700"] { color: #9f2f2a; }
+
 /* selmo. uses its logo yellow as the product accent. */
 .selmo-theme [class~="bg-[#2563EB]"] {
   background-color: #facc15;

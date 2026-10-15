@@ -5,8 +5,8 @@ import { useState } from "react";
 import type { DemoProduct } from "@/lib/product-navigation";
 
 const logoPaths: Record<DemoProduct["id"], string> = {
-  milmo: "/logos/milmo.png",
-  selmo: "/logos/selmo.png",
+  milmo: "/milmo.png",
+  selmo: "/selmo-logo.png",
   commo: "/commo.logo.png",
 };
 
