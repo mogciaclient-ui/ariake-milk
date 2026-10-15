@@ -35,7 +35,7 @@ export function MilmoSimpleSystem() {
 
   return <div className="demo2-theme min-h-screen bg-[#f5f7f3]">
     <div className="flex min-h-screen">
-      <aside className={`fixed inset-y-0 left-0 z-50 w-60 border-r border-[#dfe5dc] bg-[#17362d] text-white transition-transform lg:absolute ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 h-screen w-60 overflow-y-auto border-r border-[#dfe5dc] bg-[#17362d] text-white transition-transform ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className="flex h-20 items-center border-b border-white/10 px-6"><div><p className="font-logo text-2xl">milmo<span className="text-[#a9dc78]">.</span></p><p className="mt-1 text-[10px] font-bold tracking-[.16em] text-[#a9dc78]">NEW SIMPLE EDITION</p></div></div>
         <nav className="space-y-1 p-3">{nav.map((item) => <button key={item.id} onClick={() => move(item.id)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition ${view === item.id ? "bg-white text-[#17362d] shadow-sm" : "text-white/75 hover:bg-white/10 hover:text-white"}`}><span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${view === item.id ? "bg-[#dff2c9] text-[#254b3f]" : "bg-white/10"}`}>{item.icon}</span>{item.label}</button>)}</nav>
         <div className="absolute inset-x-3 bottom-4 rounded-xl border border-white/10 bg-white/5 p-3"><p className="text-xs font-bold">新設計プロトタイプ</p><p className="mt-1 text-[10px] leading-4 text-white/55">日常業務を6画面に集約した比較案です</p><a href="/dashboard" className="mt-3 block rounded-lg bg-white/10 px-3 py-2 text-center text-[11px] font-bold hover:bg-white/20">既存改善版に戻る</a></div>
