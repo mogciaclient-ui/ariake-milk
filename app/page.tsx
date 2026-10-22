@@ -25,7 +25,7 @@ export default function Home() {
       roleLabel: "全機能アクセス",
       office: "全営業所",
     });
-    window.setTimeout(() => router.push("/dashboard"), 450);
+    window.setTimeout(() => router.push("/demo2"), 450);
   }
 
   return <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#eef6ff] px-4 py-8 text-[#0F172A] sm:px-6">

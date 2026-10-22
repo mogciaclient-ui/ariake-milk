@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductLogo } from "@/components/product-logo";
 import { useDemoOffice } from "@/lib/demo-office";
 import { demoProducts } from "@/lib/product-navigation";
 import { yamadaAugustTotal } from "@/lib/demo2-billing";
+import { loadDemo2State, saveDemo2Contract } from "@/lib/demo2-firestore";
 
 const customers = [
   { code: "0001842", name: "山田 花子", kana: "ヤマダ ハナコ", route: "A-12", address: "佐賀県神埼郡吉野ヶ里町吉田 1234-5", tel: "0952-00-1234" },
@@ -36,7 +37,7 @@ function Icon({ name }: { name: "search" | "user" | "calendar" | "box" | "yen" |
 
 type EmbeddedCustomer = { id: string; name: string; kana: string; address: string; route: string; order: number; start: string; birthday: string; payment: string; note: string; follow: string };
 
-export function ContractPerformanceScreen({ initialCustomerName, initialCustomer, embedded = false, onBack, onOpenBilling }: { initialCustomerName?: string; initialCustomer?: EmbeddedCustomer; embedded?: boolean; onBack?: () => void; onOpenBilling?: (customerName: string) => void } = {}) {
+export function ContractPerformanceScreen({ initialCustomerName, initialCustomer, embedded = false, onBack, onOpenBilling, onSaveCustomer }: { initialCustomerName?: string; initialCustomer?: EmbeddedCustomer; embedded?: boolean; onBack?: () => void; onOpenBilling?: (customerName: string) => void; onSaveCustomer?: (changes: Partial<EmbeddedCustomer>) => void } = {}) {
   const product = demoProducts[0];
   const { office } = useDemoOffice();
   const [query, setQuery] = useState("");
@@ -52,6 +53,36 @@ export function ContractPerformanceScreen({ initialCustomerName, initialCustomer
   const [pausedDeliveries, setPausedDeliveries] = useState<Set<string>>(new Set());
   const fallbackCustomer = initialCustomerName === "新規顧客" ? { code: "新規", name: "新規顧客", kana: "", route: "未設定", address: "", tel: "" } : customers[selected];
   const customer = initialCustomer ? { code: initialCustomer.id, name: initialCustomer.name, kana: initialCustomer.kana, route: initialCustomer.route.replace("コース", ""), address: initialCustomer.address, tel: "0952-00-1234" } : fallbackCustomer;
+  const [customerFields, setCustomerFields] = useState(() => ({
+    name: initialCustomer?.name ?? customer.name,
+    kana: initialCustomer?.kana ?? customer.kana,
+    address: initialCustomer?.address ?? customer.address,
+    route: initialCustomer?.route ?? `${customer.route}コース`,
+    order: initialCustomer?.order ?? selected + 1,
+    birthday: initialCustomer?.birthday ?? "1968/04/12",
+    note: initialCustomer?.note ?? "玄関横の宅配ボックスへ",
+    payment: initialCustomer?.payment ?? "口座振替",
+  }));
+  const [contractsLoaded, setContractsLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    loadDemo2State().then((state) => {
+      const stored = state?.contracts?.[customer.code];
+      if (active && Array.isArray(stored)) setContractRows(stored as Contract[]);
+    }).catch(() => setNotice("Firebaseから契約情報を読み込めませんでした")).finally(() => {
+      if (active) setContractsLoaded(true);
+    });
+    return () => { active = false; };
+  }, [customer.code]);
+
+  useEffect(() => {
+    if (!contractsLoaded) return;
+    const timer = window.setTimeout(() => {
+      saveDemo2Contract(customer.code, contractRows).catch(() => setNotice("Firebaseへの契約保存に失敗しました"));
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [contractRows, customer.code, contractsLoaded]);
   const isClosedMonth = year === 2026 && month === 8;
   const contractMonths = initialCustomer?.start ? Math.max(0, (2026 - Number(initialCustomer.start.slice(0, 4))) * 12 + 9 - Number(initialCustomer.start.slice(5, 7))) : 17;
   const days = useMemo(() => Array.from({ length: new Date(year, month, 0).getDate() }, (_, index) => index + 1), [month, year]);
@@ -68,7 +99,7 @@ export function ContractPerformanceScreen({ initialCustomerName, initialCustomer
 
     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
       <div><h1 className="text-2xl font-bold tracking-tight">{embedded ? "顧客詳細" : "契約・実績"}</h1><p className="mt-1.5 text-sm text-slate-500">{embedded ? "顧客の基本情報から請求・入金までを一画面で確認します。" : `${office.name}の顧客契約と日別配送実績を確認・更新します。`}</p></div>
-      <div className="flex flex-wrap gap-2"><button onClick={() => setHistoryOpen(true)} className="rounded-xl border bg-white px-4 py-2.5 text-sm font-bold text-slate-600">変更履歴</button><button onClick={() => setNewContractOpen(true)} className="rounded-xl border border-[#2563EB] bg-white px-4 py-2.5 text-sm font-bold text-[#2563EB]">＋ 新規契約</button><button onClick={() => setNotice("変更内容を保存しました（デモ）")} className="rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-bold text-white shadow-sm">変更を保存</button></div>
+      <div className="flex flex-wrap gap-2"><button onClick={() => setHistoryOpen(true)} className="rounded-xl border bg-white px-4 py-2.5 text-sm font-bold text-slate-600">変更履歴</button><button onClick={() => setNewContractOpen(true)} className="rounded-xl border border-[#2563EB] bg-white px-4 py-2.5 text-sm font-bold text-[#2563EB]">＋ 新規契約</button><button onClick={() => { onSaveCustomer?.(customerFields); setNotice("変更内容を保存しました"); }} className="rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-bold text-white shadow-sm">変更を保存</button></div>
     </div>
 
     <section className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
@@ -85,11 +116,11 @@ export function ContractPerformanceScreen({ initialCustomerName, initialCustomer
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#E5E7EB] bg-white p-4"><span className="mr-2 text-xs font-bold text-slate-400">契約操作</span>{["休配", "停止", "再開", "パターン変更", "商品入替", "解約"].map((action) => <button key={action} onClick={() => setNotice(`${customer.name}さんの「${action}」を反映しました（デモ）`)} className={`rounded-lg border px-4 py-2 text-xs font-bold ${action === "解約" ? "border-red-200 text-red-600" : "border-[#E5E7EB] text-slate-600"}`}>{action}</button>)}</div>
 
     <section className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-[#2563EB]"><Icon name="user" /></span><div><p className="text-xs font-bold text-[#2563EB]">顧客コード {customer.code}</p><h2 className="text-lg font-bold">{customer.name}<span className="ml-3 text-xs font-medium text-slate-400">{customer.kana}</span></h2></div></div><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">契約中</span></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-[#2563EB]"><Icon name="user" /></span><div><p className="text-xs font-bold text-[#2563EB]">顧客コード {customer.code}</p><div className="mt-1 flex flex-wrap items-center gap-3"><input aria-label="顧客名" value={customerFields.name} onChange={(event) => setCustomerFields((current) => ({ ...current, name: event.target.value }))} className="min-w-36 border-b border-transparent bg-transparent text-lg font-bold outline-none focus:border-[#2563EB]" /><input aria-label="フリガナ" value={customerFields.kana} onChange={(event) => setCustomerFields((current) => ({ ...current, kana: event.target.value }))} className="min-w-36 border-b border-transparent bg-transparent text-xs font-medium text-slate-400 outline-none focus:border-[#2563EB]" /></div></div></div><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">契約中</span></div>
       <div className="grid divide-y divide-[#E5E7EB] md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
-        {[["住所", customer.address], ["電話番号", customer.tel], ["配送曜日・コース・配達順", `月・木 / ${initialCustomer?.route ?? `${customer.route}コース`} / ${initialCustomer?.order ?? selected + 1}番`], ["契約担当", "佐藤 美咲"]].map(([label, value]) => <div key={label} className="px-5 py-4"><p className="text-xs font-bold text-slate-400">{label}</p><p className="mt-1.5 text-sm font-semibold">{value}</p></div>)}
+        <label className="px-5 py-4"><span className="text-xs font-bold text-slate-400">住所</span><input value={customerFields.address} onChange={(event) => setCustomerFields((current) => ({ ...current, address: event.target.value }))} className="mt-1.5 w-full bg-transparent text-sm font-semibold outline-none" /></label><div className="px-5 py-4"><p className="text-xs font-bold text-slate-400">電話番号</p><p className="mt-1.5 text-sm font-semibold">{customer.tel}</p></div><div className="px-5 py-4"><p className="text-xs font-bold text-slate-400">配送コース・配達順</p><div className="mt-1 flex gap-2"><select value={customerFields.route} onChange={(event) => setCustomerFields((current) => ({ ...current, route: event.target.value }))} className="bg-transparent text-sm font-semibold outline-none"><option>Aコース</option><option>Bコース</option><option>未設定</option></select><input aria-label="配達順" min="0" type="number" value={customerFields.order} onChange={(event) => setCustomerFields((current) => ({ ...current, order: Number(event.target.value) }))} className="w-16 bg-transparent text-sm font-semibold outline-none" /><span className="text-sm font-semibold">番</span></div></div><div className="px-5 py-4"><p className="text-xs font-bold text-slate-400">契約担当</p><p className="mt-1.5 text-sm font-semibold">佐藤 美咲</p></div>
       </div>
-      <div className="grid border-t border-[#E5E7EB] bg-[#F8FAFC] md:grid-cols-3"><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">誕生日</span><input defaultValue={initialCustomer?.birthday ?? "1968/04/12"} className="min-w-0 bg-transparent font-semibold text-slate-600 outline-none" /></label><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">メモ</span><input defaultValue={initialCustomer?.note ?? "玄関横の宅配ボックスへ"} className="min-w-0 bg-transparent font-semibold text-slate-600 outline-none" /></label><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">支払方法</span><select defaultValue={initialCustomer?.payment ?? "口座振替"} className="min-w-0 bg-transparent font-semibold text-slate-600 outline-none"><option>口座振替</option><option>クレジット</option><option>現金集金</option><option>LINE</option></select></label></div>
+      <div className="grid border-t border-[#E5E7EB] bg-[#F8FAFC] md:grid-cols-3"><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">誕生日</span><input value={customerFields.birthday} onChange={(event) => setCustomerFields((current) => ({ ...current, birthday: event.target.value }))} className="min-w-0 bg-transparent font-semibold text-slate-600 outline-none" /></label><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">メモ</span><input value={customerFields.note} onChange={(event) => setCustomerFields((current) => ({ ...current, note: event.target.value }))} className="min-w-0 bg-transparent font-semibold text-slate-600 outline-none" /></label><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">支払方法</span><select value={customerFields.payment} onChange={(event) => setCustomerFields((current) => ({ ...current, payment: event.target.value }))} className="min-w-0 bg-transparent font-semibold text-slate-600 outline-none"><option>口座振替</option><option>クレジット</option><option>現金集金</option><option>LINE</option><option>未設定</option></select></label></div>
       <div className="grid border-t border-[#E5E7EB] bg-white md:grid-cols-2"><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">集金コース</span><select className="min-w-36 bg-transparent font-semibold text-slate-600 outline-none"><option>集金Aコース</option><option>集金Bコース</option></select></label><label className="px-5 py-3 text-sm"><span className="mr-3 text-xs font-bold text-slate-400">集金メモ</span><input defaultValue="毎月25日前後に訪問" className="min-w-64 bg-transparent font-semibold text-slate-600 outline-none" /></label></div>
       <div className="flex flex-wrap items-center gap-3 border-t border-[#E5E7EB] px-5 py-3 text-xs"><span className="rounded-full bg-blue-50 px-3 py-1.5 font-bold text-[#2563EB]">契約{contractMonths}ヶ月</span>{initialCustomer?.follow && initialCustomer.follow !== "—" && <span className="rounded-full bg-amber-50 px-3 py-1.5 font-bold text-amber-700">要フォロー：{initialCustomer.follow}</span>}<span className="font-semibold text-slate-500">判定条件は要確認</span></div>
     </section>
