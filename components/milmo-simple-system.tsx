@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ContractPerformanceScreen } from "@/components/contract-performance-screen";
-import { loadDemo2State, saveDemo2BillingMonth, saveDemo2Field, saveDemo2RecordChanges } from "@/lib/demo2-firestore";
+import { isScheduledDelivery, type DeliveryPattern } from "@/lib/delivery-schedule";
+import { loadDemo2State, saveDemo2BillingMonth, saveDemo2Field, saveDemo2NestedField, saveDemo2RecordChanges } from "@/lib/demo2-firestore";
 
 type View = "home" | "customers" | "customer-detail" | "delivery" | "billing" | "analysis" | "settings";
 type Customer = { id: string; name: string; kana: string; route: string; order: number; products: string; payment: string; status: string; note: string; address: string; phoneHome: string; phoneMobile: string; start: string; birthday: string; follow: string };
@@ -10,8 +11,10 @@ type Customer = { id: string; name: string; kana: string; route: string; order: 
 type ProductRow = [string, string, string, string, string, string];
 type StoredProduct = { code: string; name: string; category: string; price: string; tax: string; supplier: string };
 type Demo2Settings = { invoiceName: string; deliveryName: string; deliveryCourses: string[]; collectionCourses: string[]; closingDay: string; withdrawalDay: string; closedMonths: string[]; permission: string };
-type InvoiceContract = { code: string; product: string; price: number; start: string; days: number[]; quantity: number; status: string };
+type InvoiceContract = { code: string; product: string; price: number; start: string; days: number[]; quantity: number; status: string; deliveryPattern?: DeliveryPattern; nthWeeks?: number[] };
 type SpotSale = { product: string; unitPrice?: number; quantity?: number; soldAt?: string; price?: number; at: string };
+type DeliveryActual = { completedAt: string; quantities: Record<string, number> };
+type DeliveryActuals = Record<string, Record<string, DeliveryActual>>;
 type InvoiceLine = { key: string; product: string; quantity: number; unitPrice: number; amount: number; kind: "contract" | "spot"; dailyQuantities?: Record<string, number> };
 type InvoiceSnapshot = { customerId: string; customerName: string; address: string; lines: InvoiceLine[]; subtotal: number; createdAt: string };
 const emptySettings: Demo2Settings = { invoiceName: "", deliveryName: "", deliveryCourses: ["Aコース", "Bコース"], collectionCourses: ["集金Aコース", "集金Bコース"], closingDay: "", withdrawalDay: "", closedMonths: [], permission: "一般：閲覧のみ" };
@@ -134,9 +137,30 @@ function Customers({ customers, setCustomers, query, setQuery, setSelected, flas
 }
 
 function Delivery({ customers, setCustomers, flash, deliveryCourses }: { customers: Customer[]; setCustomers: (v: Customer[]) => void; flash: (v: string) => void; deliveryCourses: string[] }) {
-  const [route, setRoute] = useState(deliveryCourses[0] ?? "未設定"); const [date,setDate]=useState(new Date().toISOString().slice(0,10)); const [dragged,setDragged]=useState<string | null>(null); const activeRoute=deliveryCourses.includes(route)?route:(deliveryCourses[0]??"未設定"); const routeCustomers = customers.filter((c) => c.route === activeRoute); const alternativeRoute=deliveryCourses.find((course)=>course!==activeRoute);
+  const [route, setRoute] = useState(deliveryCourses[0] ?? "未設定");
+  const [date,setDate]=useState(new Date().toISOString().slice(0,10));
+  const [dragged,setDragged]=useState<string | null>(null);
+  const [contracts,setContracts]=useState<Record<string,InvoiceContract[]>>({});
+  const [deliveryActuals,setDeliveryActuals]=useState<DeliveryActuals>({});
+  const activeRoute=deliveryCourses.includes(route)?route:(deliveryCourses[0]??"未設定");
+  const routeCustomers = customers.filter((c) => c.route === activeRoute);
+  const alternativeRoute=deliveryCourses.find((course)=>course!==activeRoute);
+  useEffect(()=>{let active=true;loadDemo2State().then((state)=>{if(!active)return;setContracts((state?.contracts??{}) as Record<string,InvoiceContract[]>);setDeliveryActuals((state?.deliveryActuals??{}) as DeliveryActuals)}).catch(()=>flash("Firebaseから配達実績を読み込めませんでした"));return()=>{active=false}},[flash]);
   const moveToRoute=(id:string,target:string)=>{setCustomers(customers.map((c)=>c.id===id?{...c,route:target}:c));flash(`${target}へ移動しました`)};
-  return <><Title eyebrow="DELIVERY" title="配達" text="日付ごとの配達順、商品、本数と帳票を管理します。" action={<div className="flex gap-2"><button onClick={() => flash("出力対象のデータがありません")} className="rounded-xl border bg-white px-4 py-2.5 text-sm font-bold">地図用CSV</button><select onChange={(e)=>flash(`${e.target.value}の出力対象がありません`)} defaultValue="" className="rounded-xl bg-[#17362d] px-4 py-2.5 text-sm font-bold text-white"><option value="" disabled>帳票を出力</option>{["順路表","本数集計表","変更リスト","ピッキング","配達納品書","配送リスト"].map((v)=><option key={v}>{v}</option>)}</select></div>} /><div className="mt-5 grid gap-5 xl:grid-cols-[1fr_310px]"><section className="rounded-2xl border border-[#dfe5dc] bg-white"><div className="flex flex-wrap items-center gap-3 border-b p-4"><input type="date" value={date} onChange={(e)=>setDate(e.target.value)} className="h-10 rounded-xl border px-3 text-sm font-bold" /><div className="flex flex-wrap rounded-xl bg-[#eef1ec] p-1">{(deliveryCourses.length?deliveryCourses:["未設定"]).map((r) => <button key={r} onDragOver={(e)=>e.preventDefault()} onDrop={()=>dragged&&moveToRoute(dragged,r)} onClick={() => setRoute(r)} className={`rounded-lg px-4 py-2 text-xs font-bold ${activeRoute===r?"bg-white text-[#17362d] shadow-sm":"text-[#718079]"}`}>{r}</button>)}</div><span className="ml-auto text-xs font-bold text-[#718079]">{routeCustomers.length}件</span></div><div className="p-4"><p className="mb-3 text-[11px] font-bold text-[#89958f]">カードをドラッグして順番変更。上の別コースへドロップするとコース間移動できます。</p>{routeCustomers.length ? <div className="space-y-2">{routeCustomers.map((c,i) => <div draggable onDragStart={()=>setDragged(c.id)} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{if(!dragged||dragged===c.id)return;const source=customers.findIndex((x)=>x.id===dragged);const target=customers.findIndex((x)=>x.id===c.id);const copy=[...customers];const [item]=copy.splice(source,1);copy.splice(target,0,item);setCustomers(copy);setDragged(null);flash("配達順を変更しました")}} key={c.id} className="grid cursor-grab items-center gap-3 rounded-xl border border-[#e5e9e2] p-3 sm:grid-cols-[56px_1fr_1.2fr_auto]"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e9f5db] font-black text-[#38613f]">☰ {i+1}</div><div><p className="font-black">{c.name}</p><p className="mt-1 text-[11px] text-[#89958f]">{c.id}・{c.address}</p></div><div><p className="text-xs font-bold">{c.products}</p><p className="mt-1 text-[11px] text-[#e06b45]">{c.note}</p></div><div className="flex gap-2"><button disabled={!alternativeRoute} onClick={()=>alternativeRoute&&moveToRoute(c.id,alternativeRoute)} className="rounded-lg border px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40">別コースへ</button><button onClick={()=>flash(`${c.name}を配達完了にしました`)} className="rounded-lg bg-[#78a66f] px-3 py-2 text-xs font-bold text-white">完了</button></div></div>)}</div> : <div className="py-12 text-center"><p className="font-bold text-[#17362d]">このコースの配達はありません</p><p className="mt-2 text-sm text-[#718079]">顧客登録で配達コースを設定すると表示されます。</p></div>}</div></section><aside className="space-y-4"><div className="rounded-2xl border border-[#f0d8c9] bg-[#fffaf6] p-5"><h3 className="font-black text-[#713b2c]">{date} の変更</h3><p className="mt-4 text-sm text-[#718079]">変更データはありません。</p></div><div className="rounded-2xl border bg-white p-5"><h3 className="font-black">商品別本数・ピッキング</h3><p className="mt-4 text-sm text-[#718079]">集計対象の商品はありません。</p><button onClick={()=>flash(`${activeRoute}の出力対象がありません`)} className="mt-4 w-full rounded-xl border py-2.5 text-xs font-bold">コース別リスト出力</button></div></aside></div></>;
+  const toggleCompleted=(customer:Customer)=>{
+    const currentCustomerActuals=deliveryActuals[customer.id]??{};
+    const completed=Boolean(currentCustomerActuals[date]);
+    const nextCustomerActuals={...currentCustomerActuals};
+    if(completed){delete nextCustomerActuals[date]}else{
+      const quantities=Object.fromEntries((contracts[customer.id]??[]).filter((contract)=>contract.status==="配送中"&&isScheduledDelivery(contract,date)).map((contract)=>[contract.code,Math.max(0,Number(contract.quantity)||0)]));
+      if(!Object.keys(quantities).length){flash(`${customer.name}さんにはこの日の契約配送商品がありません`);return}
+      nextCustomerActuals[date]={completedAt:new Date().toISOString(),quantities};
+    }
+    const next={...deliveryActuals,[customer.id]:nextCustomerActuals};
+    setDeliveryActuals(next);
+    saveDemo2NestedField("deliveryActuals",customer.id,nextCustomerActuals).then(()=>flash(completed?`${customer.name}さんを未完了に戻しました`:`${customer.name}さんを配達完了にしました`)).catch(()=>{setDeliveryActuals(deliveryActuals);flash("配達完了の保存に失敗しました")});
+  };
+  return <><Title eyebrow="DELIVERY" title="配達" text="日付ごとの配達順、商品、本数と帳票を管理します。" action={<div className="flex gap-2"><button onClick={() => flash("出力対象のデータがありません")} className="rounded-xl border bg-white px-4 py-2.5 text-sm font-bold">地図用CSV</button><select onChange={(e)=>flash(`${e.target.value}の出力対象がありません`)} defaultValue="" className="rounded-xl bg-[#17362d] px-4 py-2.5 text-sm font-bold text-white"><option value="" disabled>帳票を出力</option>{["順路表","本数集計表","変更リスト","ピッキング","配達納品書","配送リスト"].map((v)=><option key={v}>{v}</option>)}</select></div>} /><div className="mt-5 grid gap-5 xl:grid-cols-[1fr_310px]"><section className="rounded-2xl border border-[#dfe5dc] bg-white"><div className="flex flex-wrap items-center gap-3 border-b p-4"><input type="date" value={date} onChange={(e)=>setDate(e.target.value)} className="h-10 rounded-xl border px-3 text-sm font-bold" /><div className="flex flex-wrap rounded-xl bg-[#eef1ec] p-1">{(deliveryCourses.length?deliveryCourses:["未設定"]).map((r) => <button key={r} onDragOver={(e)=>e.preventDefault()} onDrop={()=>dragged&&moveToRoute(dragged,r)} onClick={() => setRoute(r)} className={`rounded-lg px-4 py-2 text-xs font-bold ${activeRoute===r?"bg-white text-[#17362d] shadow-sm":"text-[#718079]"}`}>{r}</button>)}</div><span className="ml-auto text-xs font-bold text-[#718079]">{routeCustomers.length}件</span></div><div className="p-4"><p className="mb-3 text-[11px] font-bold text-[#89958f]">カードをドラッグして順番変更。上の別コースへドロップするとコース間移動できます。</p>{routeCustomers.length ? <div className="space-y-2">{routeCustomers.map((c,i) => {const completed=Boolean(deliveryActuals[c.id]?.[date]);return <div draggable onDragStart={()=>setDragged(c.id)} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{if(!dragged||dragged===c.id)return;const source=customers.findIndex((x)=>x.id===dragged);const target=customers.findIndex((x)=>x.id===c.id);const copy=[...customers];const [item]=copy.splice(source,1);copy.splice(target,0,item);setCustomers(copy);setDragged(null);flash("配達順を変更しました")}} key={c.id} className={`grid cursor-grab items-center gap-3 rounded-xl border p-3 sm:grid-cols-[56px_1fr_1.2fr_auto] ${completed?"border-[#78a66f] bg-[#f6fbf1]":"border-[#e5e9e2]"}`}><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e9f5db] font-black text-[#38613f]">☰ {i+1}</div><div><p className="font-black">{c.name}</p><p className="mt-1 text-[11px] text-[#89958f]">{c.id}・{c.address}</p></div><div><p className="text-xs font-bold">{c.products}</p><p className="mt-1 text-[11px] text-[#e06b45]">{c.note}</p></div><div className="flex gap-2"><button disabled={!alternativeRoute} onClick={()=>alternativeRoute&&moveToRoute(c.id,alternativeRoute)} className="rounded-lg border px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40">別コースへ</button><button onClick={()=>toggleCompleted(c)} className={`rounded-lg px-3 py-2 text-xs font-bold text-white ${completed?"bg-slate-500":"bg-[#78a66f]"}`}>{completed?"完了解除":"完了"}</button></div></div>})}</div> : <div className="py-12 text-center"><p className="font-bold text-[#17362d]">このコースの配達はありません</p><p className="mt-2 text-sm text-[#718079]">顧客登録で配達コースを設定すると表示されます。</p></div>}</div></section><aside className="space-y-4"><div className="rounded-2xl border border-[#f0d8c9] bg-[#fffaf6] p-5"><h3 className="font-black text-[#713b2c]">{date} の変更</h3><p className="mt-4 text-sm text-[#718079]">変更データはありません。</p></div><div className="rounded-2xl border bg-white p-5"><h3 className="font-black">商品別本数・ピッキング</h3><p className="mt-4 text-sm text-[#718079]">集計対象の商品はありません。</p><button onClick={()=>flash(`${activeRoute}の出力対象がありません`)} className="mt-4 w-full rounded-xl border py-2.5 text-xs font-bold">コース別リスト出力</button></div></aside></div></>;
 }
 
 function InvoiceDeliveryCalendar({ lines, year, month }: { lines: InvoiceLine[]; year: number; month: number }) {
@@ -177,20 +201,19 @@ function Billing({ customers, flash, customerFilter, openCustomer }: { customers
     return customers.map((customer) => {
       const paused = new Set((data?.pausedDeliveries?.[customer.id] ?? []) as string[]);
       const contracts = (data?.contracts?.[customer.id] ?? []) as InvoiceContract[];
+      const customerActuals = (data?.deliveryActuals?.[customer.id] ?? {}) as Record<string, DeliveryActual>;
       const lines: InvoiceLine[] = [];
       contracts.filter((contract) => contract.status === "配送中").forEach((contract) => {
-        const start = contract.start.replaceAll("/", "-");
-        let deliveryCount = 0;
+        let quantity = 0;
         const dailyQuantities: Record<string, number> = {};
         for (let day = 1; day <= daysInMonth; day += 1) {
           const isoDate = `${month}-${String(day).padStart(2, "0")}`;
-          const weekDay = new Date(year, monthNumber - 1, day).getDay();
-          if (isoDate >= start && Boolean(contract.days[weekDay]) && !paused.has(`${month}-${contract.code}-${day}`)) {
-            deliveryCount += 1;
-            dailyQuantities[String(day)] = Math.max(0, Number(contract.quantity) || 0);
-          }
+          const completedDelivery = customerActuals[isoDate];
+          const plannedQuantity = isScheduledDelivery(contract, isoDate) && !paused.has(`${month}-${contract.code}-${day}`) ? Math.max(0, Number(contract.quantity) || 0) : 0;
+          const deliveredQuantity = completedDelivery ? Math.max(0, Number(completedDelivery.quantities?.[contract.code]) || 0) : plannedQuantity;
+          if (deliveredQuantity > 0) dailyQuantities[String(day)] = deliveredQuantity;
+          quantity += deliveredQuantity;
         }
-        const quantity = deliveryCount * Math.max(0, Number(contract.quantity) || 0);
         const unitPrice = Math.max(0, Number(contract.price) || 0);
         if (quantity > 0) lines.push({ key: `contract-${contract.code}`, product: contract.product, quantity, unitPrice, amount: quantity * unitPrice, kind: "contract", dailyQuantities });
       });

@@ -20,6 +20,7 @@ export type Demo2FirestoreState = {
   contractHistory?: Record<string, unknown[]>;
   pausedDeliveries?: Record<string, string[]>;
   spotSales?: Record<string, unknown[]>;
+  deliveryActuals?: Record<string, Record<string, { completedAt: string; quantities: Record<string, number> }>>;
 };
 
 export type Demo2BillingRecord = {
@@ -64,7 +65,7 @@ export async function saveDemo2Contract(customerId: string, contracts: unknown[]
 }
 
 export async function saveDemo2NestedField(
-  field: "customerMeta" | "contractHistory" | "pausedDeliveries" | "spotSales",
+  field: "customerMeta" | "contractHistory" | "pausedDeliveries" | "spotSales" | "deliveryActuals",
   key: string,
   value: unknown,
 ) {
