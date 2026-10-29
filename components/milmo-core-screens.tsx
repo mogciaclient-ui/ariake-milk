@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageHeading, StatusBadge } from "@/components/page-heading";
+import { importCustomerCsv, type CustomerCsvResult, type ImportedCustomer } from "@/lib/customer-csv";
+import { loadCustomers, saveCustomers } from "@/lib/customer-firestore";
 
 const people = [
   ["0001842","山田 花子","ヤマダ ハナコ","Aコース 12番","口座振替","2026/07/01","9/18","牛乳×2・ヨーグルト×1"],
@@ -26,7 +28,88 @@ function Frame({ title, description, actions, children }: { title:string;descrip
 function Action({ children, onClick, secondary=false }: { children:React.ReactNode;onClick?:()=>void;secondary?:boolean }) { return <button onClick={onClick} className={`rounded-xl px-4 py-2.5 text-sm font-bold ${secondary?"border bg-white text-slate-600":"bg-[#2563EB] text-white"}`}>{children}</button> }
 function Toast({ message }: { message:string }) { return message ? <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-xl">✓ {message}</div> : null }
 
-function Customers() { const [query,setQuery]=useState(""); const [open,setOpen]=useState(false); const [toast,setToast]=useState(""); const rows=people.filter(p=>p.join("").includes(query)); return <Frame title="顧客管理" description="顧客情報・契約・誕生日・メモ・配達・支払いを一か所で管理します。" actions={<div className="flex gap-2"><Action secondary onClick={()=>setToast("CSV 1,500件を取り込みました（デモ）")}>CSV一括登録</Action><Action onClick={()=>setOpen(true)}>＋ 新規顧客・契約</Action></div>}><div className="mb-5 grid gap-3 sm:grid-cols-3">{[["登録顧客","1,486件"],["契約1〜3ヶ月","25件"],["要フォロー","7件"]].map(([a,b],i)=><div key={a} className={`rounded-2xl border p-4 ${i===2?"border-amber-200 bg-amber-50":"bg-white"}`}><p className="text-xs font-bold text-slate-400">{a}</p><p className="mt-2 text-2xl font-bold">{b}</p>{i>0&&<p className="mt-1 text-xs font-bold text-amber-700">自動チェック対象</p>}</div>)}</div><section className="overflow-hidden rounded-2xl border bg-white"><div className="flex gap-3 border-b p-4"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="コード・氏名・ヨミカナ・住所・電話番号で検索" className="h-11 flex-1 rounded-xl border bg-slate-50 px-4 text-sm"/><Action secondary>検索</Action></div><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-4">得意先</th><th>配達</th><th>契約商品</th><th>支払方法</th><th>契約開始</th><th>誕生日</th><th>フォロー</th></tr></thead><tbody className="divide-y">{rows.map(p=><tr key={p[0]}><td className="p-4"><b>{p[1]}</b><p className="text-xs text-slate-400">{p[0]}・{p[2]}</p></td><td>{p[3]}</td><td>{p[7]}</td><td>{p[4]}</td><td>{p[5]}</td><td>{p[6]}</td><td><StatusBadge tone={p[1]==="山田 花子"?"slate":"amber"}>{p[1]==="山田 花子"?"通常":"要フォロー"}</StatusBadge></td></tr>)}</tbody></table></div></section>{open&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onMouseDown={()=>setOpen(false)}><form className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onMouseDown={e=>e.stopPropagation()} onSubmit={e=>{e.preventDefault();setOpen(false);setToast("顧客と契約を登録しました")}}><div className="flex justify-between border-b p-5"><div><p className="text-xs font-bold text-[#2563EB]">顧客と契約を1回で登録</p><h2 className="mt-1 text-xl font-bold">新規顧客登録</h2></div><button type="button" onClick={()=>setOpen(false)}>✕</button></div><div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">{["得意先コード","得意先名","ヨミカナ","郵便番号","住所1","住所2","電話番号","誕生日","配達コース","集金コース","契約担当","支払方法"].map((x,i)=><label key={x} className={`text-sm font-bold ${x.startsWith("住所")?"lg:col-span-2":""}`}>{x}{i>7?<select className="mt-2 h-11 w-full rounded-xl border bg-white px-3 font-normal"><option>選択してください</option><option>Aコース</option><option>口座振替</option></select>:<input className="mt-2 h-11 w-full rounded-xl border px-3 font-normal"/>}</label>)}<div className="rounded-xl border border-blue-100 bg-blue-50 p-4 sm:col-span-2 lg:col-span-3"><p className="text-sm font-bold text-blue-800">契約商品</p><div className="mt-3 grid gap-3 sm:grid-cols-3"><select className="h-11 rounded-xl border bg-white px-3 text-sm"><option>有明牛乳 900ml</option></select><input type="number" defaultValue="2" className="h-11 rounded-xl border px-3"/><select className="h-11 rounded-xl border bg-white px-3 text-sm"><option>月・木</option></select></div></div><label className="text-sm font-bold sm:col-span-2 lg:col-span-3">メモ<textarea className="mt-2 h-20 w-full rounded-xl border p-3 font-normal"/></label></div><div className="flex justify-end gap-2 border-t bg-slate-50 p-4"><Action secondary onClick={()=>setOpen(false)}>キャンセル</Action><Action>顧客・契約を登録</Action></div></form></div>}<Toast message={toast}/></Frame> }
+const initialCustomers: ImportedCustomer[] = people.map((person) => ({
+  id: person[0], name: person[1], kana: person[2], delivery: person[3], payment: person[4],
+  started: person[5], birthday: person[6], products: person[7], address: "", phone: "",
+}));
+
+function Customers() {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const [customers, setCustomers] = useState(initialCustomers);
+  const [csvResult, setCsvResult] = useState<CustomerCsvResult | null>(null);
+  const [csvName, setCsvName] = useState("");
+  const [csvError, setCsvError] = useState("");
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [savingCustomers, setSavingCustomers] = useState(false);
+  const [storageStatus, setStorageStatus] = useState("Firebaseから読込中");
+  const fileInput = useRef<HTMLInputElement>(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const rows = customers.filter((customer) => Object.values(customer).join("").toLowerCase().includes(normalizedQuery));
+
+  useEffect(() => {
+    let active = true;
+    loadCustomers()
+      .then((savedCustomers) => {
+        if (!active) return;
+        if (savedCustomers.length) setCustomers(savedCustomers);
+        setStorageStatus(savedCustomers.length ? "Firebase保存済み" : "Firebase接続済み");
+      })
+      .catch(() => {
+        if (!active) return;
+        setStorageStatus("Firebase読込エラー");
+        setCsvError("保存済み顧客を読み込めませんでした。ログイン状態とFirestoreルールを確認してください。");
+      })
+      .finally(() => {
+        if (active) setLoadingCustomers(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const selectCsv = async (file?: File) => {
+    if (!file) return;
+    setCsvError("");
+    try {
+      const result = importCustomerCsv(await file.arrayBuffer());
+      setCsvName(file.name);
+      setCsvResult(result);
+      if (!result.customers.length) setCsvError(result.errors[0] || "取り込める顧客がありません。");
+    } catch {
+      setCsvResult(null);
+      setCsvError("CSVを読み込めませんでした。UTF-8またはShift_JISのCSVを選択してください。");
+    }
+  };
+
+  const commitCsv = async () => {
+    if (!csvResult?.customers.length) return;
+    const importedIds = new Set(csvResult.customers.map((customer) => customer.id));
+    const replacements = customers.filter((customer) => importedIds.has(customer.id)).length;
+    setSavingCustomers(true);
+    setCsvError("");
+    try {
+      await saveCustomers(csvResult.customers);
+      setCustomers((current) => [...current.filter((customer) => !importedIds.has(customer.id)), ...csvResult.customers].sort((left, right) => left.id.localeCompare(right.id, "ja")));
+      setCsvResult(null);
+      setStorageStatus("Firebase保存済み");
+      setToast(`${csvResult.customers.length}名をFirebaseへ保存しました${replacements ? `（${replacements}名を更新）` : ""}`);
+      if (fileInput.current) fileInput.current.value = "";
+    } catch {
+      setCsvError("Firebaseへ保存できませんでした。ログイン状態とFirestoreルールを確認してください。");
+    } finally {
+      setSavingCustomers(false);
+    }
+  };
+
+  return <Frame title="顧客管理" description="顧客情報・契約・誕生日・メモ・配達・支払いを一か所で管理します。" actions={<div className="flex gap-2"><input ref={fileInput} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => selectCsv(event.target.files?.[0])}/><Action secondary onClick={() => fileInput.current?.click()}>CSV一括登録</Action><Action onClick={() => setOpen(true)}>＋ 新規顧客・契約</Action></div>}>
+    <div className="mb-5 grid gap-3 sm:grid-cols-3">{[["登録顧客",loadingCustomers?"読込中…":`${customers.length.toLocaleString()}件`],["保存先",storageStatus],["重複時","顧客コードで更新"]].map(([label,value],index)=><div key={label} className={`rounded-2xl border p-4 ${index===2?"border-blue-200 bg-blue-50":"bg-white"}`}><p className="text-xs font-bold text-slate-400">{label}</p><p className={`${index===1?"text-lg":"text-2xl"} mt-2 font-bold`}>{value}</p></div>)}</div>
+    <section className="overflow-hidden rounded-2xl border bg-white"><div className="flex gap-3 border-b p-4"><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="コード・氏名・ヨミカナ・住所・電話番号で検索" className="h-11 flex-1 rounded-xl border bg-slate-50 px-4 text-sm"/><Action secondary>検索</Action></div><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-4">得意先</th><th>配達</th><th>契約商品</th><th>支払方法</th><th>基準日</th><th>誕生日</th><th>状態</th></tr></thead><tbody className="divide-y">{rows.map((customer)=><tr key={customer.id}><td className="p-4"><b>{customer.name}</b><p className="text-xs text-slate-400">{customer.id}{customer.kana ? `・${customer.kana}` : ""}</p><p className="mt-1 text-xs text-slate-400">{customer.address} {customer.phone}</p></td><td className="pr-4">{customer.delivery}</td><td className="max-w-md py-3 pr-4 text-xs leading-5">{customer.products}</td><td>{customer.payment}</td><td>{customer.started}</td><td>{customer.birthday}</td><td><StatusBadge tone="slate">登録済み</StatusBadge></td></tr>)}</tbody></table></div>{rows.length===0&&<p className="p-10 text-center text-sm text-slate-500">条件に一致する顧客がいません。</p>}</section>
+    {csvResult&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onMouseDown={()=>!savingCustomers&&setCsvResult(null)}><section className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onMouseDown={(event)=>event.stopPropagation()}><div className="flex items-start justify-between border-b p-5"><div><p className="text-xs font-bold text-[#2563EB]">{csvName}</p><h2 className="mt-1 text-xl font-bold">CSV取込内容の確認</h2></div><button disabled={savingCustomers} onClick={()=>setCsvResult(null)}>✕</button></div><div className="grid gap-3 p-5 sm:grid-cols-3"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">CSV明細</p><b className="mt-1 block text-xl">{csvResult.sourceRows}行</b></div><div className="rounded-xl bg-blue-50 p-4"><p className="text-xs text-blue-600">登録する顧客</p><b className="mt-1 block text-xl text-blue-800">{csvResult.customers.length}名</b></div><div className={`rounded-xl p-4 ${csvResult.errors.length?"bg-amber-50":"bg-emerald-50"}`}><p className="text-xs">読込エラー</p><b className="mt-1 block text-xl">{csvResult.errors.length}件</b></div></div>{csvResult.errors.length>0&&<div className="mx-5 mb-4 max-h-28 overflow-y-auto rounded-xl bg-amber-50 p-3 text-xs text-amber-800">{csvResult.errors.slice(0,20).map((error)=><p key={error}>{error}</p>)}</div>}<div className="mx-5 overflow-x-auto rounded-xl border"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">顧客コード</th><th>顧客名</th><th>住所・電話</th><th>コース</th><th>商品・曜日別数量</th></tr></thead><tbody className="divide-y">{csvResult.customers.slice(0,10).map((customer)=><tr key={customer.id}><td className="p-3 font-bold">{customer.id}</td><td>{customer.name}</td><td className="max-w-xs py-3 pr-4 text-xs">{customer.address}<br/>{customer.phone}</td><td>{customer.delivery}</td><td className="max-w-sm py-3 text-xs">{customer.products}</td></tr>)}</tbody></table></div>{csvResult.customers.length>10&&<p className="px-5 pt-3 text-xs text-slate-500">先頭10名を表示しています。</p>}<div className="mt-5 flex justify-end gap-2 border-t bg-slate-50 p-4"><button disabled={savingCustomers} onClick={()=>setCsvResult(null)} className="rounded-xl border bg-white px-5 py-2.5 text-sm font-bold disabled:opacity-40">キャンセル</button><button disabled={!csvResult.customers.length||savingCustomers} onClick={commitCsv} className="rounded-xl bg-[#2563EB] px-6 py-2.5 text-sm font-bold text-white disabled:opacity-40">{savingCustomers?"Firebaseへ保存中…":`${csvResult.customers.length}名を登録`}</button></div></section></div>}
+    {csvError&&<div className="fixed bottom-6 right-6 z-50 max-w-md rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-xl">{csvError}</div>}
+    {open&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onMouseDown={()=>setOpen(false)}><form className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onMouseDown={(event)=>event.stopPropagation()} onSubmit={(event)=>{event.preventDefault();setOpen(false);setToast("顧客と契約を登録しました")}}><div className="flex justify-between border-b p-5"><div><p className="text-xs font-bold text-[#2563EB]">顧客と契約を1回で登録</p><h2 className="mt-1 text-xl font-bold">新規顧客登録</h2></div><button type="button" onClick={()=>setOpen(false)}>✕</button></div><div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">{["得意先コード","得意先名","ヨミカナ","郵便番号","住所1","住所2","電話番号","誕生日","配達コース","集金コース","契約担当","支払方法"].map((label,index)=><label key={label} className={`text-sm font-bold ${label.startsWith("住所")?"lg:col-span-2":""}`}>{label}{index>7?<select className="mt-2 h-11 w-full rounded-xl border bg-white px-3 font-normal"><option>選択してください</option><option>Aコース</option><option>口座振替</option></select>:<input className="mt-2 h-11 w-full rounded-xl border px-3 font-normal"/>}</label>)}</div><div className="flex justify-end gap-2 border-t bg-slate-50 p-4"><button type="button" onClick={()=>setOpen(false)} className="rounded-xl border bg-white px-5 py-2.5 text-sm font-bold">キャンセル</button><button className="rounded-xl bg-[#2563EB] px-6 py-2.5 text-sm font-bold text-white">顧客・契約を登録</button></div></form></div>}
+    <Toast message={toast}/>
+  </Frame>;
+}
 
 function Products() { const [taxMode,setTaxMode]=useState("内税"); const [tax,setTax]=useState(10); const [price,setPrice]=useState(280); const excluded=Math.round(price/(1+tax/100)); return <Frame title="商品管理" description="メーカー項目を除き、分類・仕入先・税区分・価格を管理します。"><div className="grid gap-5 xl:grid-cols-[1fr_420px]"><section className="overflow-hidden rounded-2xl border bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-4">商品</th><th>分類</th><th>税込価格</th><th>税区分</th></tr></thead><tbody className="divide-y">{[["M-001 有明牛乳 900ml","宅配商品","¥280","内税"],["S-020 青汁セット","スポット商品","¥3,240","内税"],["W-008 業務用牛乳","卸商品","¥220","外税"]].map(r=><tr key={r[0]}>{r.map((c,i)=><td key={c} className={i===0?"p-4 font-bold":""}>{c}</td>)}</tr>)}</tbody></table></section><section className="rounded-2xl border bg-white p-5"><h2 className="font-bold">商品登録・価格計算</h2><label className="mt-4 block text-sm font-bold">税込価格<input type="number" value={price} onChange={e=>setPrice(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border px-3"/></label><div className="mt-3 grid grid-cols-2 gap-3"><label className="text-sm font-bold">税区分<select value={taxMode} onChange={e=>setTaxMode(e.target.value)} className="mt-2 h-11 w-full rounded-xl border bg-white px-3"><option>内税</option><option>外税</option></select></label><label className="text-sm font-bold">消費税率<select value={tax} onChange={e=>setTax(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border bg-white px-3"><option value="8">8%</option><option value="10">10%</option></select></label></div><div className="mt-4 rounded-xl bg-blue-50 p-4"><p className="text-xs font-bold text-blue-600">自動計算</p>{taxMode==="内税"?<><p className="mt-2 text-sm">税抜価格 <b className="float-right">¥{excluded.toLocaleString()}</b></p><p className="mt-2 text-sm">内消費税 <b className="float-right">¥{(price-excluded).toLocaleString()}</b></p></>:<><p className="mt-2 text-sm">税抜価格 <b className="float-right">¥{price.toLocaleString()}</b></p><p className="mt-2 text-sm">税込価格（{tax}%） <b className="float-right">¥{Math.round(price*(1+tax/100)).toLocaleString()}</b></p></>}</div><Action>商品を保存</Action></section></div></Frame> }
 
